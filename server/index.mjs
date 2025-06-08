@@ -56,32 +56,6 @@ app.use(session({
 }));
 app.use(passport.authenticate('session'));
 
-
-app.post('/api/user', [
-  check('username').notEmpty(),
-  check('password').notEmpty()
-], async (req, res) => {
-  const errors = validationResult(req);
-
-  if (!errors.isEmpty()) {
-    return res.status(422).json({ errors: errors.array() });
-  }
-
-  const {username, password}= req.body;
-
-  try {
-    const user = await getUser(username, password);
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    res.status(200).json(userWithoutPassword);
-  } catch (e) {
-    console.error(`ERROR: ${e.message}`);
-    res.status(503).json({ error: 'Error while performing login' });
-  }
-});
-
 app.post('/api/sessions', passport.authenticate('local'), function(req, res) {
   return res.status(201).json(req.user);
 });

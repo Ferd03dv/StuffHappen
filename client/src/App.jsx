@@ -1,33 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState, useEffect } from 'react'
 import './App.css'
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import API from './API/API.mjs'
+import Navbar from './components/navbar.jsx';
+import LandingPage from './components/landingPage.jsx';
+import SignIn from './components/signIn.jsx';
+import Home from './components/homePage.jsx'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [message, setMessage] = useState('');
+  const [user, setUser] = useState('');
+
+
+  const handleLogin = async (credentials) => {
+    try {
+      const user = await API.logIn(credentials)
+      setLoggedIn(true);
+      setUser(user);
+    }catch(err) {
+      setMessage({msg: err, type: 'danger'});
+    }
+  };
+
+  const handleLogout = async () => {
+    await API.logOut();
+    setLoggedIn(false);
+    setMessage('');
+  };
 
   return (
     <>
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <Navbar loggedIn={loggedIn} handleLogout={handleLogout} />
+
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/signin" element={<SignIn handleLogin={handleLogin} />} />
+          <Route path="/home" element={<Home loggedIn={loggedIn} user={user}/>} />
+        </Routes>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   )
 }
