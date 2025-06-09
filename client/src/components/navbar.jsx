@@ -1,18 +1,25 @@
 import { Link } from 'react-router-dom';
 
-function Navbar({ loggedIn, handleLogout }) {
+export default function Navbar({ loggedIn, handleLogout }) {
   return (
-    <nav>
-      <Link to="/">Home</Link> |{" "}
-      {loggedIn ? (
-        <>
-          <button onClick={handleLogout}>Logout</button>
-        </>
-      ) : (
-        <Link to="/signin">Login</Link>
-      )}
+    <nav className="navbar navbar-expand-lg navbar-dark" style={{ backgroundColor: '#000' }}>
+      <div className="container-fluid">
+        <Link className="navbar-brand" to="/" style={{ color: '#FFD100' }}>
+          Stuff Happens
+        </Link>
+        <div className="d-flex">
+          {loggedIn ? (
+            <Link className="btn btn-outline-light" to="/" onClick={handleLogout}>
+              Logout
+            </Link>
+          ) : (
+            <Link className="btn btn-warning" to="/signin" style={{ backgroundColor: '#FFD100', color: '#000' }}>
+              Login
+            </Link>
+          )}
+        </div>
+      </div>
     </nav>
   );
 }
 
-export default Navbar;

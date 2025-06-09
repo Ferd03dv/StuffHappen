@@ -23,6 +23,14 @@ function App() {
     }
   };
 
+  const handleStatistic = async() => {
+    try{
+      await API.getStatistic(user.id)
+    }catch(err){
+      setMessage({msg: err, type: 'danger'});
+    }
+  }
+
   const handleLogout = async () => {
     await API.logOut();
     setLoggedIn(false);
@@ -37,7 +45,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn handleLogin={handleLogin} />} />
-          <Route path="/home" element={<Home loggedIn={loggedIn} user={user}/>} />
+          <Route path="/home" element={<Home loggedIn={loggedIn} user={user} handleStatistic={handleStatistic}/>} />
         </Routes>
       </div>
     </>

@@ -1,10 +1,13 @@
-function LandingPage() {
+import GameRuleCard from './gameRuleCard.jsx';
+
+export default function LandingPage() {
   return (
-    <div>
-      <h2>🎮 Benvenuto su StuffHappens - University Edition 🎮</h2>
-      <p>Il gioco dove ogni scelta cambia il futuro.</p>
+    <div className="container text-center mt-5" style={{ color: '#FFD100' }}>
+      <h1 className="mb-4">Benvenuto in Stuff Happens</h1>
+      <button className="btn btn-warning mb-4" style={{ backgroundColor: '#FFD100', color: '#000' }}>
+        Demo
+      </button>
+      <GameRuleCard section={"rules"} />
     </div>
   );
 }
-
-export default LandingPage;
