@@ -6,6 +6,7 @@ import Navbar from './components/navbar.jsx';
 import LandingPage from './components/landingPage.jsx';
 import SignIn from './components/signIn.jsx';
 import Home from './components/homePage.jsx'
+import Match from './components/match.jsx';
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -31,6 +32,16 @@ function App() {
     }
   }
 
+  const handleIntialCards = async() => {
+    try{
+      const cards = await API.getInitialCards()
+
+      return cards
+    }catch(err){
+      setMessage({msg: err, type: 'danger'});
+    }
+  }
+
   const handleLogout = async () => {
     await API.logOut();
     setLoggedIn(false);
@@ -46,6 +57,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn handleLogin={handleLogin} />} />
           <Route path="/home" element={<Home loggedIn={loggedIn} user={user} handleStatistic={handleStatistic}/>} />
+          <Route path="/match" element={<Match loggedIn={loggedIn} handleIntialCards={handleIntialCards} />} />
         </Routes>
       </div>
     </>

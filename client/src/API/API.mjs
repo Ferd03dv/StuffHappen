@@ -63,6 +63,33 @@ const getStatistic = async (id) => {
   }
 };
 
+const getInitialCards = async () => {
+  try {
+    const response = await fetch(`${SERVER_URL}/api/cards`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
 
-const API = { logIn, getUserInfo, logOut, getStatistic };
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result?.error || 'Errore sconosciuto');
+    }
+
+    if (!Array.isArray(result)) {
+      throw new Error('Dati ricevuti non validi');
+    }
+
+    return result;
+  } catch (err) {
+    console.error('Errore fetch carte iniziali:', err.message);
+    throw err;
+  }
+}
+
+
+const API = { logIn, getUserInfo, logOut, getStatistic, getInitialCards };
 export default API;
