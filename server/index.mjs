@@ -4,7 +4,7 @@ import morgan from "morgan"
 import {check, validationResult} from 'express-validator';
 import {getUser} from './DAO/userDAO.mjs';
 import {addGame, listGamesByUserId} from './DAO/gameDAO.mjs';
-import {getAllCards} from './DAO/cardDAO.mjs';
+import {getInitialCards, getCard} from './DAO/cardDAO.mjs';
 import { addRound, getRoundsByPartitaId } from "./DAO/roundDAO.mjs";
 import { addInitialCardToGame} from './DAO/rel_card_gameDAO.mjs'
 import { getFullHistoryByUser } from './DAO/historyDAO.mjs';
@@ -74,16 +74,17 @@ app.delete('/api/sessions/current', (req, res) => {
 });
 
 app.post('/api/games', isLoggedIn, [
-  check("userId").notEmpty().withMessage('userId non può essere empty'),
-  check("risultato").notEmpty().withMessage('risultato non può essere empty'),
-  check("carte_vinte").isInt()
+  check("userId").isInt()
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(422).json({ errors: errors.array() });
   }
 
-  const {userId, risultato, carte_vinte} = req.body;
+  const risultato = "PERSO";
+  const carte_vinte = 0;
+
+  const {userId} = req.body;
 
   if (!userId) {
     return res.status(400).json({ error: 'Missing userId in request body' });
@@ -91,7 +92,7 @@ app.post('/api/games', isLoggedIn, [
 
   try {
     const game = await addGame(userId, risultato, carte_vinte);
-    res.status(201).json({ game });
+    res.status(201).json({ id: game.id });
   } catch (err) {
     console.error('Error creating game:', err);
     res.status(503).json({ error: 'Database error while creating game' });
@@ -146,11 +147,36 @@ app.get('/api/history/:userId', isLoggedIn, async (req, res) => {
   }
 });
 
-app.get('/api/cards', async (req, res) => {
+app.get('/api/cards/:idPartita', async (req, res) => {
+  const { idPartita } = req.params
+
+  if(idPartita.isEmpty){
+     return res.status(400).json({ error: 'idPartita Non valido' });
+  }
+
   try {
-    const card = await getAllCards();
-    if (!card) {
+    const cards = await getInitialCards(idPartita);
+    if (!cards) {
       return res.status(404).json({ error: 'Cards not found' });
+    }
+    res.json(cards);
+  } catch (err) {
+    console.error('Error retrieving card:', err);
+    res.status(503).json({ error: 'Database error while retrieving card' });
+  }
+});
+
+app.get('/api/cards/single/:idPartita', isLoggedIn, async (req, res) => {
+  const { idPartita } = req.params
+
+  if(idPartita.isEmpty){
+     return res.status(400).json({ error: 'idPartita Non valido' });
+  }
+
+  try {
+    const card = await getCard();
+    if (!card) {
+      return res.status(404).json({ error: 'Card not found' });
     }
     res.json(card);
   } catch (err) {
@@ -159,20 +185,18 @@ app.get('/api/cards', async (req, res) => {
   }
 });
 
-app.post('/api/partite/:id/round', isLoggedIn, [
+app.post('/api/partite/:idPartita/round', isLoggedIn, [
   check('numero_round').isInt({ min: 1 }).withMessage('numero_round deve essere un intero positivo'),
   check('idCarta').notEmpty().withMessage('idCarta non può essere empty'),
   check('vinta').isBoolean().withMessage('vinta deve essere boleano'),
 ], async (req, res) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
+  if (!errors.isEmpty) {
     return res.status(422).json({ errors: errors.array() });
   }
 
-  const idPartita = parseInt(req.params.id);
+  const idPartita = req.params.idPartita;
   const { numero_round, idCarta, vinta } = req.body;
-
-  console.log(idCarta)
 
   if (isNaN(idPartita)) {
     return res.status(400).json({ error: 'ID partita non valido' });
@@ -180,7 +204,7 @@ app.post('/api/partite/:id/round', isLoggedIn, [
 
   try {
     const roundId = await addRound(idPartita, numero_round, idCarta, vinta);
-    res.status(201).json({ roundId });
+    res.status(201).json("Added")
   } catch (err) {
     console.error('Errore durante la creazione del round:', err);
     res.status(503).json({ error: 'Errore database durante la creazione del round' });

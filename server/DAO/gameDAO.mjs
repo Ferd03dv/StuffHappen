@@ -9,15 +9,13 @@ const db = new sqlite.Database('database.db', (err) => {
 export const addGame = (userId, risultato, carte_vinte) => {
   return new Promise((resolve, reject) => {
     const currentDate = dayjs().format('YYYY-MM-DD HH:mm:ss');
-    const sql = 'INSERT INTO PARTITA (userId, date, risultato, carte_vinte ) VALUES (?, ?, ?, ?)';
-
-    console.log(risultato)
-
-    db.run(sql, [currentDate, userId, risultato, carte_vinte], function (err) {
+    const sql = 'INSERT INTO PARTITA (userId, date, risultato, carte_vinte) VALUES (?, ?, ?, ?)';
+    db.run(sql, [userId, currentDate, risultato, carte_vinte], function (err) {
       if (err) {
         reject(err);
       } else {
-        resolve("created")
+        const game = new Game(this.lastID, currentDate, userId, risultato, carte_vinte);
+        resolve(game);
       }
     });
   });

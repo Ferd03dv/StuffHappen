@@ -1,21 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import API from '../API/API.mjs';
+import Card from './Card';
 
-export default function Match({loggedIn, handleIntialCards}) {
+export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCard, matchId}) {
   const [cards, setCards] = useState([]);
   const [guessMade, setGuessMade] = useState(false);
   const [guessCorrect, setGuessCorrect] = useState(false);
+  const [successi, setSuccessi] = useState(0);
+  const [errori, setErrori] = useState(0);
+  const [numeroRound, setNumeroRound] = useState(1)
   const location = useLocation();
   const demo = location.state?.demo ?? false;
   const navigate = useNavigate();
 
   useEffect(() => {
     const loadCards = async () => {
-      const result = await handleIntialCards();
-      setCards(result);
+      const cards = await handleIntialMatchAndCards();
+      setCards(cards);
     };
     loadCards();
-  }, [handleIntialCards]);
+  }, []);
 
   useEffect(() => {
     if (demo && guessMade) {
@@ -27,46 +32,66 @@ export default function Match({loggedIn, handleIntialCards}) {
     }
    }, [demo, guessMade, navigate]);
 
+  useEffect(() => {
+    if (!demo && (successi === 3 || errori === 3)) {
+      const timeout = setTimeout(() => {
+        navigate('/home');
+      }, 3000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [successi, errori, demo, navigate]);
+
   if (!cards || cards.length < 4) {
-  return (
-    <div className="text-white text-center mt-10">
-      Caricamento carte in corso...
-    </div>
-  );
-}
+    return (
+      <div className="text-white text-center mt-10">
+        Caricamento carte in corso...
+      </div>
+    );
+  }
 
   const displayed = [...cards];
   const challenger = displayed.pop(); 
   const trio = displayed;
 
-  const handleGuess = (min, max) => {
-    if (guessMade) return;
+  const handleGuess = async (min, max) => {
+    if (guessMade || successi >= 3 || errori >= 3) return;
 
     const isCorrect = challenger.indice_sfortuna >= min && challenger.indice_sfortuna < max;
     setGuessMade(true);
     setGuessCorrect(isCorrect);
+    setNumeroRound((r) => r + 1); 
 
-    if (isCorrect) {
-      const newTrio = [...trio, challenger].sort((a, b) => a.indice_sfortuna - b.indice_sfortuna);
-      setCards([...newTrio]); // aggiorniamo solo il trio ordinato
-    }
+    if (demo) return;
+
+    setTimeout(async () => {
+      if (isCorrect) {
+        const newTrio = [...trio, challenger].sort((a, b) => a.indice_sfortuna - b.indice_sfortuna);
+        setCards([...newTrio]);
+        setSuccessi((s) => s + 1);
+      } else {
+        setErrori((e) => e + 1);
+      }
+
+      try {
+        await API.addRound(matchId, numeroRound, challenger.id, isCorrect);
+      } catch (err) {
+        console.error('Errore salvataggio round:', err);
+      }
+
+      const newCard = await handleNewCard();
+      setCards((prev) => [...prev.slice(0, 3), newCard]);
+
+      setGuessMade(false);
+      setGuessCorrect(false);
+    }, 1500);
   };
-
-  const CardComponent = ({ card }) => (
-    <div className="border border-white rounded-xl p-4 m-2 bg-black text-center w-[150px]">
-      <p className="font-bold text-[#FFD100]">{card.nome}</p>
-      <img src={card.immagine} alt={card.nome} className="w-full h-[100px] object-cover rounded-md mb-2" />
-      {guessMade && (
-        <p className="text-sm text-white">Indice: {card.indice_sfortuna.toFixed(1)}</p>
-      )}
-    </div>
-  );
 
   return (
     <div className="flex flex-col items-center justify-between min-h-screen py-10 px-4 bg-black text-[#FFD100]">
       {/* Carta sfidante */}
       <div className="mb-10">
-        <CardComponent card={challenger} />
+        <Card card={challenger} showIndice={guessMade} />
       </div>
 
       {/* Bottoni */}
@@ -86,7 +111,7 @@ export default function Match({loggedIn, handleIntialCards}) {
       {/* Le 3 carte base */}
       <div className="flex justify-center gap-4 flex-row flex-wrap w-full max-w-3xl mx-auto">
         {trio.map((card) => (
-            <CardComponent key={card.id} card={card} />
+          <Card key={card.id} card={card} showIndice={guessMade} />
         ))}
       </div>
 
@@ -94,6 +119,12 @@ export default function Match({loggedIn, handleIntialCards}) {
       {guessMade && (
         <div className={`mt-8 text-lg font-semibold ${guessCorrect ? 'text-green-400' : 'text-red-500'}`}>
           {guessCorrect ? 'Bravo! Hai indovinato!' : 'Peccato! Ritenta!'}
+        </div>
+      )}
+
+      {(successi === 3 || errori === 3) && (
+        <div className="mt-8 text-xl font-bold text-white">
+          {successi === 3 ? 'Hai vinto la partita!' : 'Hai perso la partita!'}
         </div>
       )}
     </div>

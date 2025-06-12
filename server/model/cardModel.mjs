@@ -1,6 +1,6 @@
-export default function Card(id, name, img, index) {
+export default function Card(id, nome, immagine, indice_sfortuna) {
   this.id = id;
-  this.name = name;
-  this.img = img;
-  this.index = index;
+  this.nome = nome;
+  this.immagine = immagine;
+  this.indice_sfortuna = indice_sfortuna;
 }

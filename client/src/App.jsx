@@ -12,6 +12,7 @@ function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
+  const [matchId, setMatchId] = useState('');
 
 
   const handleLogin = async (credentials) => {
@@ -32,11 +33,23 @@ function App() {
     }
   }
 
-  const handleIntialCards = async() => {
-    try{
-      const cards = await API.getInitialCards()
+  const handleInitialMatchAndCards = async () => {
+    try {
+      const { id } = await API.createMatch(user.id);
+      setMatchId(id);
+      const cards = await API.getInitialCards(id);
 
       return cards
+    } catch (err) {
+      setMessage({ msg: err.message || err, type: 'danger' });
+    }
+  };
+
+  const handleNewCard = async() => {
+    try{
+      const card = await API.getCard(matchId)
+
+      return card
     }catch(err){
       setMessage({msg: err, type: 'danger'});
     }
@@ -57,7 +70,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn handleLogin={handleLogin} />} />
           <Route path="/home" element={<Home loggedIn={loggedIn} user={user} handleStatistic={handleStatistic}/>} />
-          <Route path="/match" element={<Match loggedIn={loggedIn} handleIntialCards={handleIntialCards} />} />
+          <Route path="/match" element={<Match loggedIn={loggedIn} handleIntialMatchAndCards={handleInitialMatchAndCards} handleNewCard={handleNewCard} matchId={matchId} />} />
         </Routes>
       </div>
     </>
