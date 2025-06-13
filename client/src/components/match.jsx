@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import API from '../API/API.mjs';
 import Card from './Card';
@@ -10,15 +10,91 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
   const [successi, setSuccessi] = useState(0);
   const [errori, setErrori] = useState(0);
   const [numeroRound, setNumeroRound] = useState(1)
+  const [timeLeft, setTimeLeft] = useState(30);
   const location = useLocation();
   const demo = location.state?.demo ?? false;
   const navigate = useNavigate();
+  const displayed = [...cards];
+  const challenger = displayed.pop(); 
+  const trio = displayed;
+  const timerRef = useRef(null);
 
+  const startTimer = () => {
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const checkAnswerAndTimer = async (isCorrect, timer)  => {
+    if (isCorrect && timer > 0) {
+        const newTrio = [...trio, challenger].sort((a, b) => a.indice_sfortuna - b.indice_sfortuna);
+        setCards([...newTrio]);
+        setSuccessi((s) => s + 1);
+      } else if(!isCorrect || timer === 0){
+        setErrori((e) => e + 1);
+      }
+
+      try {
+        await API.addRound(matchId, numeroRound, challenger.id, isCorrect);
+      } catch (err) {
+        console.error('Errore salvataggio round:', err);
+      }
+
+      const newCard = await handleNewCard();
+      setCards((prev) => [...prev.slice(0, 3), newCard]);
+
+      setGuessMade(false);
+      setGuessCorrect(false);
+      setTimeLeft(30);
+      startTimer();    
+  }
+
+  const handleMatchEnd = async () => {
+    try {
+      await API.updateMatchResult(matchId, successi === 3 ? "VINTO" : "PERSO", successi);
+    } catch (err) {
+      console.error('Errore durante l\'aggiornamento del risultato della partita:', err.message);
+    }
+  };
+
+  const handleGuess = async (min, max) => {
+    if (guessMade || successi >= 3 || errori >= 3) return;
+
+    clearInterval(timerRef.current);
+
+    const isCorrect = challenger.indice_sfortuna >= min && challenger.indice_sfortuna < max;
+    setGuessMade(true);
+    setGuessCorrect(isCorrect);
+    setNumeroRound((r) => r + 1); 
+
+    if (demo) return;
+
+    setTimeout(async () => {
+      await checkAnswerAndTimer(isCorrect, timeLeft)
+    }, 1500);
+  };
+
+  const handleTimeOut = async () => {
+    try {
+      await checkAnswerAndTimer(false, timeLeft)
+    } catch (err) {
+      console.error('Errore nella gestione del timer:', err.message);
+    }
+  }
+  
   useEffect(() => {
     const loadCards = async () => {
-      const cards = await handleIntialMatchAndCards();
+      const cards = await handleIntialMatchAndCards(demo);
       setCards(cards);
     };
+    startTimer();
     loadCards();
   }, []);
 
@@ -34,6 +110,8 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
 
   useEffect(() => {
     if (!demo && (successi === 3 || errori === 3)) {
+      handleMatchEnd();
+
       const timeout = setTimeout(() => {
         navigate('/home');
       }, 3000);
@@ -42,6 +120,19 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
     }
   }, [successi, errori, demo, navigate]);
 
+  useEffect(() => {
+    if (timeLeft === 0 && !guessMade && successi < 3 && errori < 3 && !demo) {
+      setGuessMade(true);
+      setGuessCorrect(false);
+      setNumeroRound((r) => r + 1);
+
+      setTimeout(() => {
+        handleTimeOut();
+      }, 1500);
+    }
+  }, [timeLeft]);
+
+  
   if (!cards || cards.length < 4) {
     return (
       <div className="text-white text-center mt-10">
@@ -50,45 +141,12 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
     );
   }
 
-  const displayed = [...cards];
-  const challenger = displayed.pop(); 
-  const trio = displayed;
-
-  const handleGuess = async (min, max) => {
-    if (guessMade || successi >= 3 || errori >= 3) return;
-
-    const isCorrect = challenger.indice_sfortuna >= min && challenger.indice_sfortuna < max;
-    setGuessMade(true);
-    setGuessCorrect(isCorrect);
-    setNumeroRound((r) => r + 1); 
-
-    if (demo) return;
-
-    setTimeout(async () => {
-      if (isCorrect) {
-        const newTrio = [...trio, challenger].sort((a, b) => a.indice_sfortuna - b.indice_sfortuna);
-        setCards([...newTrio]);
-        setSuccessi((s) => s + 1);
-      } else {
-        setErrori((e) => e + 1);
-      }
-
-      try {
-        await API.addRound(matchId, numeroRound, challenger.id, isCorrect);
-      } catch (err) {
-        console.error('Errore salvataggio round:', err);
-      }
-
-      const newCard = await handleNewCard();
-      setCards((prev) => [...prev.slice(0, 3), newCard]);
-
-      setGuessMade(false);
-      setGuessCorrect(false);
-    }, 1500);
-  };
-
   return (
     <div className="flex flex-col items-center justify-between min-h-screen py-10 px-4 bg-black text-[#FFD100]">
+      {/* Timer */}
+      <div className="text-white text-2xl font-mono mb-4">
+        Tempo rimasto: {timeLeft}s
+      </div>
       {/* Carta sfidante */}
       <div className="mb-10">
         <Card card={challenger} showIndice={guessMade} />

@@ -56,6 +56,8 @@ const getStatistic = async (id) => {
       throw new Error(statistic.error || 'Errore sconosciuto');
     }
 
+    console.log(statistic)
+
     return statistic;
   } catch (err) {
     console.error('Errore fetch statistiche:', err.message);
@@ -166,6 +168,33 @@ const addRound = async (idPartita, numero_round, idCarta, vinta) => {
   }
 };
 
+const updateMatchResult = async (idPartita, risultato, carte_vinte) => {
+  try {
+    const response = await fetch(`${SERVER_URL}/api/games/${idPartita}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        risultato,
+        carte_vinte,
+      }),
+    });
 
-const API = { logIn, getUserInfo, logOut, getStatistic, getInitialCards, getCard, createMatch, addRound};
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Errore sconosciuto');
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.error('Errore durante l\'aggiornamento del risultato della partita:', err.message);
+    throw err;
+  }
+};
+
+
+
+const API = { logIn, getUserInfo, logOut, getStatistic, getInitialCards, getCard, createMatch, addRound, updateMatchResult};
 export default API;

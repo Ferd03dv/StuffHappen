@@ -27,19 +27,24 @@ function App() {
 
   const handleStatistic = async() => {
     try{
-      await API.getStatistic(user.id)
+      return await API.getStatistic(user.id)
     }catch(err){
       setMessage({msg: err, type: 'danger'});
     }
   }
 
-  const handleInitialMatchAndCards = async () => {
+  const handleInitialMatchAndCards = async (demo) => {
     try {
-      const { id } = await API.createMatch(user.id);
-      setMatchId(id);
-      const cards = await API.getInitialCards(id);
+      if(!demo){
+        const { id } = await API.createMatch(user.id);
+        setMatchId(id);
+        const cards = await API.getInitialCards(id);
+        return cards
+      }else{
+        const cards = await API.getInitialCards(0);
+        return cards
+      }
 
-      return cards
     } catch (err) {
       setMessage({ msg: err.message || err, type: 'danger' });
     }

@@ -9,7 +9,7 @@ export default function Home({loggedIn, user, handleStatistic}) {
 
   const loadStats = async () => {
     try {
-      const result = await handleStatistic;
+      const result = await handleStatistic();
       setStats(result);
     } catch (err) {
       console.error(err);
