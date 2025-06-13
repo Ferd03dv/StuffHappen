@@ -17,14 +17,16 @@ export const getInitialCards = (idPartita) => {
         const sortedFirstThree = [...cards.slice(0, 3)].sort((a, b) => a.indice_sfortuna - b.indice_sfortuna);
         const fourthCard = cards[3];
 
-        const insertSql = 'INSERT INTO CARTE_INIZIALI (idPartita, idCarta) VALUES (?, ?)';
-        sortedFirstThree.forEach(card => {
-          db.run(insertSql, [idPartita, card.id], (err) => {
-            if (err) {
-              console.error('Error inserting into CARTE_INIZIALI:', err);
-            }
+        if (idPartita !== 0) {
+          const insertSql = 'INSERT INTO CARTE_INIZIALI (idPartita, idCarta) VALUES (?, ?)';
+          sortedFirstThree.forEach(card => {
+            db.run(insertSql, [idPartita, card.id], (err) => {
+              if (err) {
+                console.error('Error inserting into CARTE_INIZIALI:', err);
+              }
+            });
           });
-        });
+        }
 
         resolve([...sortedFirstThree, fourthCard]);
       } else {
@@ -33,6 +35,7 @@ export const getInitialCards = (idPartita) => {
     });
   });
 };
+
 
 export const getCard = (idPartita) => {
   return new Promise((resolve, reject) => {

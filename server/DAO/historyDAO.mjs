@@ -17,13 +17,35 @@ export function getFullHistoryByUser(userId) {
       c.indice_sfortuna,
       r.numero_round AS numeroRound,
       r.vinta,
-      CASE WHEN ci.idCarta IS NOT NULL THEN 1 ELSE 0 END AS isIniziali
+      1 AS isIniziali
     FROM PARTITA p
-    LEFT JOIN ROUND r ON r.idPartita = p.id
-    LEFT JOIN CARTE_INIZIALI ci ON ci.idPartita = p.id AND ci.idCarta = r.idCarta
-    LEFT JOIN CARTA c ON c.id = r.idCarta
+    JOIN CARTE_INIZIALI ci ON ci.idPartita = p.id
+    JOIN CARTA c ON c.id = ci.idCarta
+    LEFT JOIN ROUND r ON r.idPartita = p.id AND r.idCarta = ci.idCarta
+
+    UNION
+
+    SELECT
+      p.id AS idPartita,
+      p.date,
+      p.risultato,
+      p.carte_vinte,
+      c.id AS idCarta,
+      c.nome,
+      c.immagine,
+      c.indice_sfortuna,
+      r.numero_round AS numeroRound,
+      r.vinta,
+      0 AS isIniziali
+    FROM PARTITA p
+    JOIN ROUND r ON r.idPartita = p.id
+    JOIN CARTA c ON c.id = r.idCarta
+    WHERE NOT EXISTS (
+      SELECT 1 FROM CARTE_INIZIALI ci
+      WHERE ci.idPartita = p.id AND ci.idCarta = r.idCarta
+    )
     WHERE p.userId = ?
-    ORDER BY p.date DESC, r.numero_round ASC
+    ORDER BY date DESC, idPartita DESC, isIniziali DESC, numeroRound ASC
   `;
 
   return new Promise((resolve, reject) => {
@@ -33,3 +55,4 @@ export function getFullHistoryByUser(userId) {
     });
   });
 }
+

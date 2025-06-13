@@ -3,7 +3,7 @@ import cors from "cors"
 import morgan from "morgan"
 import {check, validationResult} from 'express-validator';
 import {getUser} from './DAO/userDAO.mjs';
-import {addGame, listGamesByUserId} from './DAO/gameDAO.mjs';
+import {addGame, listGamesByUserId, updateGameResult} from './DAO/gameDAO.mjs';
 import {getInitialCards, getCard} from './DAO/cardDAO.mjs';
 import { addRound, getRoundsByPartitaId } from "./DAO/roundDAO.mjs";
 import { addInitialCardToGame} from './DAO/rel_card_gameDAO.mjs'
@@ -122,7 +122,7 @@ app.patch('/api/games/:idPartita', isLoggedIn, [
       return res.status(404).json({ error: 'Partita non trovata' });
     }
 
-    res.status(200).json({ message: 'Partita aggiornata con successo' });
+    res.status(200).json({ message: 'Modified' });
   } catch (err) {
     console.error('Errore aggiornamento partita:', err);
     res.status(503).json({ error: 'Errore database durante aggiornamento' });
