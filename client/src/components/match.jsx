@@ -11,12 +11,13 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
   const [errori, setErrori] = useState(0);
   const [numeroRound, setNumeroRound] = useState(1)
   const [timeLeft, setTimeLeft] = useState(30);
+  const [roundResultVisible, setRoundResultVisible] = useState(false);
   const location = useLocation();
   const demo = location.state?.demo ?? false;
   const navigate = useNavigate();
   const displayed = [...cards];
   const challenger = displayed.pop(); 
-  const trio = displayed;
+  let mycards = displayed;
   const timerRef = useRef(null);
 
   const startTimer = () => {
@@ -32,29 +33,48 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
     }, 1000);
   };
 
-  const checkAnswerAndTimer = async (isCorrect, timer)  => {
+  const checkAnswerAndTimer = async (isCorrect, timer) => {
     if (isCorrect && timer > 0) {
-        const newTrio = [...trio, challenger].sort((a, b) => a.indice_sfortuna - b.indice_sfortuna);
-        setCards([...newTrio]);
-        setSuccessi((s) => s + 1);
-      } else if(!isCorrect || timer === 0){
-        setErrori((e) => e + 1);
+      // Aggiungi la carta al mazzo
+      setCards((prevCards) => {
+        const currentBaseCards = prevCards.slice(0, -1); // rimuovi il challenger
+        const newCardList = [...currentBaseCards, prevCards[prevCards.length - 1]];
+        return newCardList.sort((a, b) => a.indice_sfortuna - b.indice_sfortuna);
+      });
+      setSuccessi((s) => s + 1);
+
+      // Solo se non demo, prendi nuova carta
+      if (!demo) {
+        const newCard = await handleNewCard();
+        setCards((prevCards) => [...prevCards, newCard]);
       }
 
-      try {
-        await API.addRound(matchId, numeroRound, challenger.id, isCorrect);
-      } catch (err) {
-        console.error('Errore salvataggio round:', err);
+    } else {
+      setErrori((e) => e + 1);
+
+      setCards((prevCards) => {
+        const currentBaseCards = prevCards.slice(0, -1); // sempre rimuovi challenger se sbagli
+        return currentBaseCards;
+      });
+
+      if (!demo && errori < 2) {
+        const newCard = await handleNewCard();
+        setCards((prevCards) => [...prevCards, newCard]); // aggiungi solo se continuerai a giocare
       }
+    }
 
-      const newCard = await handleNewCard();
-      setCards((prev) => [...prev.slice(0, 3), newCard]);
-
-      setGuessMade(false);
-      setGuessCorrect(false);
-      setTimeLeft(30);
-      startTimer();    
+  try {
+    await API.addRound(matchId, numeroRound, challenger.id, isCorrect);
+  } catch (err) {
+    console.error('Errore salvataggio round:', err);
   }
+
+  setGuessMade(true);
+  setGuessCorrect(isCorrect);
+  setRoundResultVisible(true);
+};
+
+
 
   const handleMatchEnd = async () => {
     try {
@@ -88,6 +108,16 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
       console.error('Errore nella gestione del timer:', err.message);
     }
   }
+
+  const handleNextRound = async () => {
+    if (demo) return;
+    setNumeroRound((r) => r + 1);
+    setGuessMade(false);
+    setGuessCorrect(false);
+    setTimeLeft(30);
+    setRoundResultVisible(false);
+    startTimer();
+  };
   
   useEffect(() => {
     const loadCards = async () => {
@@ -113,7 +143,7 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
       handleMatchEnd();
 
       const timeout = setTimeout(() => {
-        navigate('/home');
+        navigate('/summury', { state: { cards }});
       }, 3000);
 
       return () => clearTimeout(timeout);
@@ -143,16 +173,14 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
 
   return (
     <div className="flex flex-col items-center justify-between min-h-screen py-10 px-4 bg-black text-[#FFD100]">
-      {/* Timer */}
       <div className="text-white text-2xl font-mono mb-4">
         Tempo rimasto: {timeLeft}s
       </div>
-      {/* Carta sfidante */}
+
       <div className="mb-10">
         <Card card={challenger} showIndice={guessMade} />
       </div>
 
-      {/* Bottoni */}
       <div className="flex justify-center gap-4 flex-wrap mb-10 px-4 w-full max-w-md mx-auto">
         {[ [1, 25], [25, 50], [50, 75], [75, 100] ].map(([min, max]) => (
           <button
@@ -168,21 +196,22 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
 
       {/* Le 3 carte base */}
       <div className="flex justify-center gap-4 flex-row flex-wrap w-full max-w-3xl mx-auto">
-        {trio.map((card) => (
-          <Card key={card.id} card={card} showIndice={guessMade} />
+        {mycards.map((card) => (
+          <Card key={card.id} card={card} showIndice={true} />
         ))}
       </div>
 
-      {/* Feedback */}
-      {guessMade && (
-        <div className={`mt-8 text-lg font-semibold ${guessCorrect ? 'text-green-400' : 'text-red-500'}`}>
-          {guessCorrect ? 'Bravo! Hai indovinato!' : 'Peccato! Ritenta!'}
-        </div>
-      )}
-
-      {(successi === 3 || errori === 3) && (
-        <div className="mt-8 text-xl font-bold text-white">
-          {successi === 3 ? 'Hai vinto la partita!' : 'Hai perso la partita!'}
+      {roundResultVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center text-[#FFD100] z-50">
+          <h2 className={`text-3xl font-bold mb-6 ${guessCorrect ? 'text-green-400' : 'text-red-500'}`}>
+            {guessCorrect ? 'Hai indovinato!' : 'Sbagliato!'}
+          </h2>
+          <button
+            className="bg-[#FFD100] text-black px-6 py-2 rounded-lg hover:bg-white transition"
+            onClick={handleNextRound}
+          >
+            Prossimo round
+          </button>
         </div>
       )}
     </div>

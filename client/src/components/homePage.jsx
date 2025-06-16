@@ -1,51 +1,93 @@
-import { useState } from 'react';
-import GameRuleCard from './gameRuleCard.jsx';
-import GetStartedPopUp from './getStartedPopUp.jsx';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-export default function Home({loggedIn, user, handleStatistic}) {
-  const [section, setSection] = useState('rules');
+import { useState, useContext } from "react";
+import { Container, Button, ToggleButton, ButtonGroup, Card, Modal } from "react-bootstrap";
+import GameRuleCard from "./gameRuleCard.jsx";
+import GetStartedPopUp from "./getStartedPopUp.jsx";
+import API from '../API/API.mjs';
+import {AuthContext} from "../context/authContext.jsx";
+
+export default function Home() {
+  const [section, setSection] = useState("rules");
   const [stats, setStats] = useState(null);
   const [showPopUp, setPopUp] = useState(false);
+  const {user, setUser} = useContext(AuthContext)
+  const [message, setMessage] = useState('');
 
   const loadStats = async () => {
-    try {
-      const result = await handleStatistic();
-      setStats(result);
-    } catch (err) {
-      console.error(err);
-      setStats([]); 
+    try{
+      const statistic = await API.getStatistic(user.id)
+      setStats(statistic)
+    }catch(err){
+      setMessage({msg: err, type: 'danger'});
     }
   };
 
   return (
-    <div className="container text-center mt-5" style={{ color: '#FFD100', position: 'realtive' }}>
-      <h2 className="mb-4">Benvenuto!</h2>
+    <Container className="py-5 text-center text-warning" style={{ position: "relative" }}>
+      <h2 className="fw-bold mb-4">Benvenuto, {user?.username || "🙂"}!</h2>
 
-      <button className="btn btn-warning mb-4" style={{ backgroundColor: '#FFD100', color: '#000' }} onClick={() => setPopUp(true)}>
-        Nuova Partita
-      </button>
-
-      {showPopUp && <GetStartedPopUp onCancel={() => setPopUp(false)} demo={false}/>}
-
-      <div className="d-flex justify-content-center mb-3">
-        <button
-          className={`btn me-2 ${section === 'rules' ? 'btn-warning' : 'btn-outline-light'}`}
-          onClick={() => setSection('rules')}
+      <div className="mb-4">
+        <Button
+          variant="warning"
+          className="fw-bold"
+          style={{ color: "#000" }}
+          onClick={() => setPopUp(true)}
         >
-          Regole
-        </button>
-        <button
-          type = "submit"
-          className={`btn ${section === 'stats' ? 'btn-warning' : 'btn-outline-light'}`}
-          onClick={() => {
-            loadStats()
-            setSection('stats');  
-          }}>
-          Statistiche
-        </button>
+          Nuova Partita
+        </Button>
       </div>
 
-      <GameRuleCard section={section} loggedIn={loggedIn} stats={stats} />
-    </div>
+      <ButtonGroup className="mb-4">
+        <ToggleButton
+          type="radio"
+          variant={section === "rules" ? "warning" : "outline-light"}
+          checked={section === "rules"}
+          onClick={() => setSection("rules")}
+        >
+          Regolamento
+        </ToggleButton>
+        <ToggleButton
+          type="radio"
+          variant={section === "stats" ? "warning" : "outline-light"}
+          checked={section === "stats"}
+          onClick={() => {
+            loadStats();
+            setSection("stats");
+          }}
+        >
+          Le Statistiche
+        </ToggleButton>
+      </ButtonGroup>
+
+      <div className="d-flex justify-content-center">
+        <Card
+          className="shadow-lg p-4"
+          style={{
+            backgroundColor: "#111",
+            borderRadius: "1rem",
+            width: "100%",
+            maxWidth: "800px",
+            color: "#FFD100",
+          }}
+        >
+          <GameRuleCard section={section} stats={stats} />
+        </Card>
+      </div>
+
+      <Modal
+        show={showPopUp}
+        onHide={() => setPopUp(false)}
+        centered
+        backdrop="static"
+        keyboard={false}
+      >
+        <Modal.Body className="p-0">
+          <GetStartedPopUp onCancel={() => setPopUp(false)} demo={false} />
+        </Modal.Body>
+      </Modal>
+    </Container>
   );
 }
+
+

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-
+import { Button } from 'react-bootstrap';
 
 export default function GetStartedPopUp({ onCancel, demo }) {
   const navigate = useNavigate();
@@ -9,27 +9,34 @@ export default function GetStartedPopUp({ onCancel, demo }) {
   };
 
   return (
-     <div className="p-3 border rounded" style={{ backgroundColor: '#111', minHeight: '150px' }}>
-        <p className="mb-4 text-lg font-semibold">
-          {demo
+    <div
+      className="text-center p-4 rounded shadow"
+      style={{ backgroundColor: '#111', color: '#FFD100' }}
+    >
+      <p className="fs-5 fw-semibold mb-4">
+        {demo
           ? 'Stai per iniziare una partita demo. Continuare?'
           : 'Stai per iniziare una nuova partita. Continuare?'}
-        </p>
-        <div className="flex justify-around">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 rounded border border-white text-[#FFD100] hover:bg-white hover:text-black transition"
-          >
-            Annulla
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 rounded border border-white text-[#FFD100] hover:bg-[#FFD100] hover:text-black font-bold transition"
-          >
-            Iniziamo!
-          </button>
-        </div>
-     </div>
+      </p>
+
+      <div className="d-flex justify-content-center gap-3">
+        <Button
+          variant="outline-light"
+          onClick={onCancel}
+        >
+          Annulla
+        </Button>
+
+        <Button
+          variant="warning"
+          style={{ color: '#000', fontWeight: 'bold' }}
+          onClick={handleConfirm}
+        >
+          Iniziamo!
+        </Button>
+      </div>
+    </div>
   );
 }
+
 

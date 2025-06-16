@@ -1,5 +1,17 @@
 const SERVER_URL = "http://localhost:3001";
 
+const isLoggedIn = async () => {
+    const response = await fetch(SERVER_URL + '/api/sessions/current', {
+        credentials: 'include'
+    });
+    if (response.ok) {
+        const user = await response.json();
+        return user;
+    } else {
+        return null;
+    }
+}
+
 const logIn = async (credentials) => {
   const response = await fetch(SERVER_URL + '/api/sessions', {
     method: 'POST',
@@ -55,8 +67,6 @@ const getStatistic = async (id) => {
     if (!response.ok) {
       throw new Error(statistic.error || 'Errore sconosciuto');
     }
-
-    console.log(statistic)
 
     return statistic;
   } catch (err) {
@@ -196,5 +206,5 @@ const updateMatchResult = async (idPartita, risultato, carte_vinte) => {
 
 
 
-const API = { logIn, getUserInfo, logOut, getStatistic, getInitialCards, getCard, createMatch, addRound, updateMatchResult};
+const API = { isLoggedIn, logIn, getUserInfo, logOut, getStatistic, getInitialCards, getCard, createMatch, addRound, updateMatchResult};
 export default API;

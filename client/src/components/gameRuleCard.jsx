@@ -3,7 +3,7 @@ import StatisticCard from './statisticCard.jsx';
 
 const PAGE_SIZE = 3;
 
-export default function GameRuleCard({ section, isLoggedIn, stats }) {
+export default function GameRuleCard({ section, stats }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = Math.ceil((stats?.length || 0) / PAGE_SIZE);
@@ -20,7 +20,19 @@ export default function GameRuleCard({ section, isLoggedIn, stats }) {
         <div>
           <h5>Regole del gioco</h5>
           <p>
-            Posiziona correttamente gli eventi sulla scala della sfortuna. Vince chi ne indovina di più!
+            In <strong>Stuff Happens</strong>, il tuo compito è semplice (ma crudele): ordinare eventi disastrosi in base al loro <strong>Indice di Sfiga</strong> da 1 a 100.<br /><br />
+            Ogni carta rappresenta una disavventura (es: "perdi il lavoro", "ti chiudono in ascensore con un clown", "ti si rompe il telefono nel WC") con un valore assegnato da esperti del dolore, della psicologia... e un po’ di umorismo nero.
+          </p>
+          <ul className="text-start">
+            <li>Ogni giocatore inizia con 3 carte ordinate per valore.</li>
+            <li>A turno, un giocatore pesca una nuova carta e legge solo l'evento (non il numero!).</li>
+            <li>Gli altri devono indovinare dove si posiziona nella linea temporale della sfortuna.</li>
+            <li>Se indovinano correttamente, guadagnano la carta.</li>
+            <li>Se sbagliano, la carta torna in fondo al mazzo.</li>
+          </ul>
+          <p>
+            Vince chi colleziona per primo <strong>3 carte corrette</strong> (o un numero stabilito all’inizio).<br />
+            <em>Preparati a scoprire cosa è peggio tra “una multa da 500€” o “camminare su un Lego nudo”!</em>
           </p>
         </div>
       )}
