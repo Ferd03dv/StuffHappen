@@ -1,6 +1,8 @@
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import GetStartedPopUp from './getStartedPopUp.jsx';
+import { Container, Row, Col, Card as BootstrapCard, Button, Alert } from 'react-bootstrap';
 
 export default function CardSummary() {
   const [showPopUp, setPopUp] = useState(false);
@@ -9,30 +11,47 @@ export default function CardSummary() {
   const cards = location.state?.cards ?? [];
 
   if (!cards || cards.length === 0) {
-    return <div className="text-white text-center mt-10">Nessuna carta da mostrare.</div>;
+    return (
+      <Container className="text-center mt-5 text-light">
+        <Alert variant="warning">Nessuna carta da mostrare.</Alert>
+      </Container>
+    );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-4">
-      <button className="btn btn-warning mb-4" style={{ backgroundColor: '#FFD100', color: '#000' }} onClick={() => setPopUp(true)}>
-              Nuova Partita
-            </button>
-       {showPopUp && <GetStartedPopUp onCancel={() => setPopUp(false)} demo={false}/>}
-      
-      <button className="btn btn-warning mb-4" style={{ backgroundColor: '#FFD100', color: '#000' }} onClick={() => {navigate("/home")}}>
-              Torna alla Home
-            </button>
-      {cards.map((card) => (
-        <div key={card.id} className="bg-black border border-[#FFD100] rounded-xl p-4 text-[#FFD100] shadow-lg">
-          <h3 className="text-xl font-bold mb-2">{card.nome}</h3>
-          <img
-            src={card.immagine}
-            alt={card.nome}
-            className="w-full h-48 object-cover rounded-md mb-3"
-          />
-          <p className="text-sm">Indice di sfortuna: <span className="font-mono">{card.indice_sfortuna}</span></p>
-        </div>
-      ))}
-    </div>
+    <Container className="py-5 text-light">
+      <Row className="mb-4 justify-content-center">
+        <Col xs="auto" className="mb-2">
+          <Button variant="warning" onClick={() => setPopUp(true)}>Nuova Partita</Button>
+        </Col>
+        <Col xs="auto" className="mb-2">
+          <Button variant="outline-light" onClick={() => navigate(`/home/${1}`)}>Torna alla Home</Button>
+        </Col>
+      </Row>
+
+      {showPopUp && <GetStartedPopUp onCancel={() => setPopUp(false)} demo={false} />}
+
+      <Row>
+        {cards.map(card => (
+          <Col key={card.id} xs={12} sm={6} md={4} className="mb-4">
+            <BootstrapCard bg="dark" text="warning" className="border border-warning shadow-sm h-100">
+              <BootstrapCard.Img
+                variant="top"
+                src={card.immagine}
+                alt={card.nome}
+                style={{ height: '250px', objectFit: 'cover' }}
+              />
+              <BootstrapCard.Body>
+                <BootstrapCard.Title className="text-center">{card.nome}</BootstrapCard.Title>
+                <BootstrapCard.Text className="text-center">
+                  Indice di sfortuna: <strong className="font-monospace">{card.indice_sfortuna}</strong>
+                </BootstrapCard.Text>
+              </BootstrapCard.Body>
+            </BootstrapCard>
+          </Col>
+        ))}
+      </Row>
+    </Container>
   );
 }
+

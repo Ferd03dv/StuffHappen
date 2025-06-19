@@ -11,15 +11,17 @@ export default function Home() {
   const [section, setSection] = useState("rules");
   const [stats, setStats] = useState(null);
   const [showPopUp, setPopUp] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const {user, setUser} = useContext(AuthContext)
   const [message, setMessage] = useState('');
 
   const loadStats = async () => {
-    try{
-      const statistic = await API.getStatistic(user.id)
-      setStats(statistic)
-    }catch(err){
-      setMessage({msg: err, type: 'danger'});
+    try {
+      const statistic = await API.getStatistic(user.id);
+      setStats(statistic);
+      setCurrentPage(1); 
+    } catch (err) {
+      setMessage({ msg: err, type: 'danger' });
     }
   };
 
@@ -51,8 +53,8 @@ export default function Home() {
           type="radio"
           variant={section === "stats" ? "warning" : "outline-light"}
           checked={section === "stats"}
-          onClick={() => {
-            loadStats();
+          onClick={async () => {
+            await loadStats();
             setSection("stats");
           }}
         >
@@ -71,7 +73,7 @@ export default function Home() {
             color: "#FFD100",
           }}
         >
-          <GameRuleCard section={section} stats={stats} />
+          <GameRuleCard section={section} stats={stats} currentPage={currentPage} setCurrentPage={setCurrentPage} />
         </Card>
       </div>
 

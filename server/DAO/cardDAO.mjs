@@ -17,7 +17,7 @@ export const getInitialCards = (idPartita) => {
         const sortedFirstThree = [...cards.slice(0, 3)].sort((a, b) => a.indice_sfortuna - b.indice_sfortuna);
         const fourthCard = cards[3];
 
-        if (idPartita !== 0) {
+        if (Number(idPartita) !== 0) {
           const insertSql = 'INSERT INTO CARTE_INIZIALI (idPartita, idCarta) VALUES (?, ?)';
           sortedFirstThree.forEach(card => {
             db.run(insertSql, [idPartita, card.id], (err) => {

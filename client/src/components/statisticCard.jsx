@@ -11,7 +11,7 @@ export default function StatisticCard({ stats }) {
   }
 
   const grouped = stats.reduce((acc, item) => {
-    const id = item.idPartita;
+    const id = `${item.idPartita}`;
     if (!acc[id]) {
       acc[id] = {
         id,

@@ -1,25 +1,53 @@
-import { useEffect, useState, useRef } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import { useEffect, useState, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Container, Row, Col, Button, Alert, Spinner, Modal } from 'react-bootstrap';
 import API from '../API/API.mjs';
 import Card from './Card';
+import { AuthContext } from '../context/authContext.jsx';
 
-export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCard, matchId}) {
+export default function Match() {
   const [cards, setCards] = useState([]);
+  const [matchId, setMatchId] = useState('');
   const [guessMade, setGuessMade] = useState(false);
   const [guessCorrect, setGuessCorrect] = useState(false);
+  const [roundResultVisible, setRoundResultVisible] = useState(false);
   const [successi, setSuccessi] = useState(0);
   const [errori, setErrori] = useState(0);
-  const [numeroRound, setNumeroRound] = useState(1)
+  const [numeroRound, setNumeroRound] = useState(1);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [roundResultVisible, setRoundResultVisible] = useState(false);
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const { user } = useContext(AuthContext);
   const location = useLocation();
-  const demo = location.state?.demo ?? false;
   const navigate = useNavigate();
-  const displayed = [...cards];
-  const challenger = displayed.pop(); 
-  let mycards = displayed;
+  const demo = location.state?.demo ?? false;
   const timerRef = useRef(null);
 
+  const challenger = cards[cards.length - 1];
+  const baseCards = cards.slice(0, -1);
+
+  // Inizializza match
+  const initMatch = async () => {
+    try {
+      let fetchedCards;
+      if (!demo) {
+        const { id } = await API.createMatch(user.id);
+        setMatchId(id);
+        fetchedCards = await API.getInitialCards(id);
+      } else {
+        fetchedCards = await API.getInitialCards(0);
+      }
+      setCards(fetchedCards);
+    } catch (err) {
+      setMessage(err.message || 'Errore durante il caricamento');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Timer
   const startTimer = () => {
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -33,187 +61,192 @@ export default function Match({loggedIn, handleIntialMatchAndCards, handleNewCar
     }, 1000);
   };
 
-  const checkAnswerAndTimer = async (isCorrect, timer) => {
-    if (isCorrect && timer > 0) {
-      // Aggiungi la carta al mazzo
-      setCards((prevCards) => {
-        const currentBaseCards = prevCards.slice(0, -1); // rimuovi il challenger
-        const newCardList = [...currentBaseCards, prevCards[prevCards.length - 1]];
-        return newCardList.sort((a, b) => a.indice_sfortuna - b.indice_sfortuna);
-      });
-      setSuccessi((s) => s + 1);
-
-      // Solo se non demo, prendi nuova carta
-      if (!demo) {
-        const newCard = await handleNewCard();
-        setCards((prevCards) => [...prevCards, newCard]);
-      }
-
-    } else {
-      setErrori((e) => e + 1);
-
-      setCards((prevCards) => {
-        const currentBaseCards = prevCards.slice(0, -1); // sempre rimuovi challenger se sbagli
-        return currentBaseCards;
-      });
-
-      if (!demo && errori < 2) {
-        const newCard = await handleNewCard();
-        setCards((prevCards) => [...prevCards, newCard]); // aggiungi solo se continuerai a giocare
-      }
-    }
-
-  try {
-    await API.addRound(matchId, numeroRound, challenger.id, isCorrect);
-  } catch (err) {
-    console.error('Errore salvataggio round:', err);
-  }
-
-  setGuessMade(true);
-  setGuessCorrect(isCorrect);
-  setRoundResultVisible(true);
-};
-
-
-
-  const handleMatchEnd = async () => {
+  // Nuova carta
+  const fetchNewCard = async () => {
     try {
-      await API.updateMatchResult(matchId, successi === 3 ? "VINTO" : "PERSO", successi);
+      return await API.getCard(matchId);
     } catch (err) {
-      console.error('Errore durante l\'aggiornamento del risultato della partita:', err.message);
+      setMessage(err.message || 'Errore durante il recupero carta');
     }
   };
 
+  // Controlla risposta
   const handleGuess = async (min, max) => {
     if (guessMade || successi >= 3 || errori >= 3) return;
 
     clearInterval(timerRef.current);
 
     const isCorrect = challenger.indice_sfortuna >= min && challenger.indice_sfortuna < max;
+
     setGuessMade(true);
     setGuessCorrect(isCorrect);
-    setNumeroRound((r) => r + 1); 
+    setNumeroRound(r => r + 1);
 
-    if (demo) return;
-
-    setTimeout(async () => {
-      await checkAnswerAndTimer(isCorrect, timeLeft)
-    }, 1500);
+    // Aspetta un attimo, poi mostra risultato
+    setTimeout(() => handleRoundResult(isCorrect), 1500);
   };
 
-  const handleTimeOut = async () => {
-    try {
-      await checkAnswerAndTimer(false, timeLeft)
-    } catch (err) {
-      console.error('Errore nella gestione del timer:', err.message);
+  const handleRoundResult = async (isCorrect) => {
+    if (isCorrect) {
+      setSuccessi(s => s + 1);
+    } else {
+      setErrori(e => e + 1);
     }
-  }
+
+    if (!demo) {
+      try {
+        await API.addRound(matchId, numeroRound, challenger.id, isCorrect);
+      } catch (err) {
+        console.error('Errore salvataggio round:', err.message);
+      }
+    }
+
+    setRoundResultVisible(true);
+  };
+
+  const handleTimeOut = () => {
+    if (!demo && !guessMade && successi < 3 && errori < 3) {
+      setGuessMade(true);
+      setGuessCorrect(false);
+      setNumeroRound(r => r + 1);
+      setTimeout(() => handleRoundResult(false), 1500);
+    }
+  };
 
   const handleNextRound = async () => {
-    if (demo) return;
-    setNumeroRound((r) => r + 1);
+    const isLastRound = successi === 3 || errori === 3;
+
+    const updatedBase = cards.slice(0, -1); // tutte meno il challenger
+    const currentChallenger = cards[cards.length - 1];
+
+    let newDeck = updatedBase;
+
+    if (guessCorrect && !isLastRound) {
+      // Aggiungi solo se risposta corretta e non siamo all'ultimo round
+      newDeck = [...updatedBase, currentChallenger].sort(
+        (a, b) => a.indice_sfortuna - b.indice_sfortuna
+      );
+    }
+
+    if (!demo && !isLastRound) {
+      const newCard = await fetchNewCard();
+      if (newCard) {
+        newDeck = [...newDeck, newCard];
+      }
+    }
+
+    setCards(newDeck);
     setGuessMade(false);
     setGuessCorrect(false);
     setTimeLeft(30);
     setRoundResultVisible(false);
-    startTimer();
+
+    if (!isLastRound) startTimer();
   };
-  
+
+  const handleMatchEnd = async () => {
+    try {
+      await API.updateMatchResult(matchId, successi === 3 ? 'VINTO' : 'PERSO', successi);
+    } catch (err) {
+      console.error('Errore salvataggio match:', err.message);
+    }
+  };
+
+  // useEffect per inizializzazione
   useEffect(() => {
-    const loadCards = async () => {
-      const cards = await handleIntialMatchAndCards(demo);
-      setCards(cards);
-    };
+    initMatch();
     startTimer();
-    loadCards();
+    return () => clearInterval(timerRef.current);
   }, []);
 
+  // Timer timeout
   useEffect(() => {
-    if (demo && guessMade) {
-        const timeout = setTimeout(() => {
-        navigate('/');
-        }, 2000); 
+    if (timeLeft === 0) handleTimeOut();
+  }, [timeLeft]);
 
-        return () => clearTimeout(timeout); 
-    }
-   }, [demo, guessMade, navigate]);
-
+  // Fine partita
   useEffect(() => {
     if (!demo && (successi === 3 || errori === 3)) {
       handleMatchEnd();
-
-      const timeout = setTimeout(() => {
-        navigate('/summury', { state: { cards }});
-      }, 3000);
-
-      return () => clearTimeout(timeout);
+      
+      navigate(`/summury/${user.id}/${matchId}`, { state: { cards: successi < 3 ? cards.slice(0, -1) :  cards } });
+      
     }
-  }, [successi, errori, demo, navigate]);
+  }, [successi, errori]);
 
-  useEffect(() => {
-    if (timeLeft === 0 && !guessMade && successi < 3 && errori < 3 && !demo) {
-      setGuessMade(true);
-      setGuessCorrect(false);
-      setNumeroRound((r) => r + 1);
-
-      setTimeout(() => {
-        handleTimeOut();
-      }, 1500);
-    }
-  }, [timeLeft]);
-
-  
-  if (!cards || cards.length < 4) {
+  // Se caricamento
+  if (loading || cards.length < 4) {
     return (
-      <div className="text-white text-center mt-10">
-        Caricamento carte in corso...
-      </div>
+      <Container className="text-center text-light mt-5">
+        <Spinner animation="border" variant="warning" />
+        <p className="mt-3">Caricamento carte in corso...</p>
+      </Container>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen py-10 px-4 bg-black text-[#FFD100]">
-      <div className="text-white text-2xl font-mono mb-4">
-        Tempo rimasto: {timeLeft}s
-      </div>
+    <Container className="py-5 text-center text-light">
+      <h2>Tempo rimasto: <span className="text-warning">{timeLeft}s</span></h2>
 
-      <div className="mb-10">
-        <Card card={challenger} showIndice={guessMade} />
-      </div>
+      <Row className="my-4 justify-content-center">
+        <Col md={6}>
+          <Card card={challenger} showIndice={guessMade} />
+        </Col>
+      </Row>
 
-      <div className="flex justify-center gap-4 flex-wrap mb-10 px-4 w-full max-w-md mx-auto">
+      <Row className="mb-4 justify-content-center">
         {[ [1, 25], [25, 50], [50, 75], [75, 100] ].map(([min, max]) => (
-          <button
-            key={`${min}-${max}`}
-            onClick={() => handleGuess(min, max)}
-            disabled={guessMade}
-            className="px-4 py-2 border border-white rounded-md hover:bg-[#FFD100] hover:text-black transition"
-          >
-            {min} - {max}
-          </button>
+          <Col key={min} xs={6} md={3} className="mb-2">
+            <Button
+              variant="outline-warning"
+              className="w-100"
+              onClick={() => handleGuess(min, max)}
+              disabled={guessMade}
+            >
+              {min} - {max}
+            </Button>
+          </Col>
         ))}
-      </div>
+      </Row>
 
-      {/* Le 3 carte base */}
-      <div className="flex justify-center gap-4 flex-row flex-wrap w-full max-w-3xl mx-auto">
-        {mycards.map((card) => (
-          <Card key={card.id} card={card} showIndice={true} />
+      <Row className="justify-content-center">
+        {baseCards.map(card => (
+          <Col key={card.id} xs={6} md={4} className="mb-3">
+            <Card card={card} showIndice={true} />
+          </Col>
         ))}
-      </div>
+      </Row>
 
-      {roundResultVisible && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex flex-col justify-center items-center text-[#FFD100] z-50">
-          <h2 className={`text-3xl font-bold mb-6 ${guessCorrect ? 'text-green-400' : 'text-red-500'}`}>
+      {/* Messaggio d'esito round */}
+      <Modal show={roundResultVisible} centered backdrop="static">
+        <Modal.Body className="text-center bg-dark text-light">
+          <h3 className={guessCorrect ? 'text-success' : 'text-danger'}>
             {guessCorrect ? 'Hai indovinato!' : 'Sbagliato!'}
-          </h2>
-          <button
-            className="bg-[#FFD100] text-black px-6 py-2 rounded-lg hover:bg-white transition"
-            onClick={handleNextRound}
+          </h3>
+          <Button
+            variant="warning"
+            className="mt-3"
+            onClick={() => {
+              if (demo) {
+                navigate('/');
+              } else {
+                handleNextRound();
+              }
+            }}
           >
-            Prossimo round
-          </button>
-        </div>
+            {demo ? 'Torna alla home' : 'Prossimo round'}
+          </Button>
+        </Modal.Body>
+      </Modal>
+
+
+      {/* Messaggio generale */}
+      {message && (
+        <Alert variant="danger" className="mt-4">
+          {message}
+        </Alert>
       )}
-    </div>
+    </Container>
   );
 }
+

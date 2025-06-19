@@ -1,11 +1,18 @@
+import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from 'react-bootstrap';
+import {AuthContext} from "../context/authContext.jsx";
 
 export default function GetStartedPopUp({ onCancel, demo }) {
   const navigate = useNavigate();
+  const {user, setUser} = useContext(AuthContext)
 
   const handleConfirm = () => {
-    navigate('/match', { state: { demo } });
+    if(demo === false){
+      navigate(`/match/${user.id}`, { state: { demo } });
+    }else{
+      navigate(`/match/0`, { state: { demo } });
+    }
   };
 
   return (

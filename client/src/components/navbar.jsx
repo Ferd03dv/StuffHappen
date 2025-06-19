@@ -1,13 +1,14 @@
 import {useContext, useState} from "react";
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {AuthContext} from "../context/authContext.jsx";
 import API from '../API/API.mjs'
-import { useNavigate } from 'react-router-dom';
 
 export default function Navbar() {
   const {user, setUser} = useContext(AuthContext)
   const [message, setMessage] = useState('');
   const navigate = useNavigate()
+
+  const isInMatch = location.pathname.startsWith('/match');
 
   const logOut = async () => {
     try {
@@ -33,20 +34,30 @@ export default function Navbar() {
       <div className="container-fluid">
         <span
           className="navbar-brand"
-          onClick={handleLogoClick}
+          onClick={!isInMatch ? handleLogoClick : undefined}
           style={{ color: '#FFD100', cursor: 'pointer' }}
         >
           Stuff Happens
         </span>
         <div className="d-flex">
           {user != null ? (
-            <Link className="btn btn-outline-light" to="/" onClick={()=>logOut()}>
+            <button
+              className="btn btn-outline-light"
+              onClick={!isInMatch ? logOut : undefined}
+              disabled={isInMatch}
+              style={{ opacity: isInMatch ? 0.5 : 1, cursor: isInMatch ? 'not-allowed' : 'pointer' }}
+            >
               Logout
-            </Link>
+            </button>
           ) : (
-            <Link className="btn btn-warning" to="/signin" style={{ backgroundColor: '#FFD100', color: '#000' }}>
+            <button
+              className="btn btn-warning"
+              onClick={() => {if (!isInMatch) navigate('/signin');}}
+              disabled={isInMatch}
+              style={{ backgroundColor: '#FFD100', color: '#000'}}
+            >
               Login
-            </Link>
+            </button>
           )}
         </div>
       </div>

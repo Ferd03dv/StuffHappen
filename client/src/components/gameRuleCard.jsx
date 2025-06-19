@@ -3,9 +3,7 @@ import StatisticCard from './statisticCard.jsx';
 
 const PAGE_SIZE = 3;
 
-export default function GameRuleCard({ section, stats }) {
-  const [currentPage, setCurrentPage] = useState(1);
-
+export default function GameRuleCard({ section, stats, currentPage, setCurrentPage }) {
   const totalPages = Math.ceil((stats?.length || 0) / PAGE_SIZE);
 
   const handlePageChange = (page) => {
@@ -45,7 +43,6 @@ export default function GameRuleCard({ section, stats }) {
           ) : (
             <>
               <StatisticCard stats={paginatedStats} />
-
               <div className="mt-3 d-flex flex-wrap gap-2">
                 {[...Array(totalPages)].map((_, idx) => (
                   <button

@@ -13,8 +13,6 @@ import CardSummary from './components/summary.jsx';
 function App() {
   const [message, setMessage] = useState('');
   const [user, setUser] = useState('');
-  const [matchId, setMatchId] = useState('');
-
 
   const isLoggedIn = async (credentials) => {
     setUser(await API.isLoggedIn(credentials))
@@ -25,39 +23,6 @@ function App() {
     isLoggedIn();
   }, []);
 
-  const handleInitialMatchAndCards = async (demo) => {
-    try {
-      if(!demo){
-        const { id } = await API.createMatch(user.id);
-        setMatchId(id);
-        const cards = await API.getInitialCards(id);
-        return cards
-      }else{
-        const cards = await API.getInitialCards(0);
-        return cards
-      }
-
-    } catch (err) {
-      setMessage({ msg: err.message || err, type: 'danger' });
-    }
-  };
-
-  const handleNewCard = async() => {
-    try{
-      const card = await API.getCard(matchId)
-
-      return card
-    }catch(err){
-      setMessage({msg: err, type: 'danger'});
-    }
-  }
-
-  const handleLogout = async () => {
-    await API.logOut();
-    setLoggedIn(false);
-    setMessage('');
-  };
-
   return (
     <>
       <AuthContext.Provider value={{user: user, setUser: setUser}}>
@@ -67,8 +32,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/home/:userId" element={<Home />} />
-          <Route path="/match" element={<Match handleIntialMatchAndCards={handleInitialMatchAndCards} handleNewCard={handleNewCard} matchId={matchId} />} />
-          <Route path="/summury" element={<CardSummary/>} />
+          <Route path="/match/:userId" element={<Match />} />
+          <Route path="/summury/:userId/:matchId" element={<CardSummary/>} />
         </Routes>
       </AuthContext.Provider>    
     </>
