@@ -45,6 +45,7 @@ export default function Home() {
           type="radio"
           variant={section === "rules" ? "warning" : "outline-light"}
           checked={section === "rules"}
+          style={{ fontWeight: section === "rules" ? "bold" : "normal" }}
           onClick={() => setSection("rules")}
         >
           Regolamento
@@ -52,6 +53,7 @@ export default function Home() {
         <ToggleButton
           type="radio"
           variant={section === "stats" ? "warning" : "outline-light"}
+          style={{ fontWeight: section === "stats" ? "bold" : "normal" }}
           checked={section === "stats"}
           onClick={async () => {
             await loadStats();

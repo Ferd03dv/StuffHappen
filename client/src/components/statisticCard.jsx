@@ -119,13 +119,24 @@ export default function StatisticCard({ stats }) {
       </Row>
 
       {totalPages > 1 && (
-        <Pagination className="justify-content-center mt-4">
+        <div className="d-flex justify-content-center mt-4 gap-2 flex-wrap">
           {[...Array(totalPages)].map((_, i) => (
-            <Pagination.Item key={i} active={i + 1 === page} onClick={() => setPage(i + 1)}>
+            <button
+              key={i}
+              className={`btn btn-sm px-3 py-1 rounded-pill fw-bold shadow-sm ${
+                page === i + 1 ? 'btn-warning text-dark' : 'btn-outline-light'
+              }`}
+              style={{
+                minWidth: '40px',
+                borderWidth: '2px',
+                transition: 'all 0.2s ease-in-out',
+              }}
+              onClick={() => setPage(i + 1)}
+            >
               {i + 1}
-            </Pagination.Item>
+            </button>
           ))}
-        </Pagination>
+        </div>
       )}
     </div>
   );

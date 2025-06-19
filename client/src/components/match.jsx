@@ -3,7 +3,7 @@ import { useEffect, useState, useRef, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Button, Alert, Spinner, Modal } from 'react-bootstrap';
 import API from '../API/API.mjs';
-import Card from './Card';
+import Card from './card';
 import { AuthContext } from '../context/authContext.jsx';
 
 export default function Match() {
@@ -28,7 +28,6 @@ export default function Match() {
   const challenger = cards[cards.length - 1];
   const baseCards = cards.slice(0, -1);
 
-  // Inizializza match
   const initMatch = async () => {
     try {
       let fetchedCards;
@@ -47,7 +46,6 @@ export default function Match() {
     }
   };
 
-  // Timer
   const startTimer = () => {
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
@@ -61,7 +59,6 @@ export default function Match() {
     }, 1000);
   };
 
-  // Nuova carta
   const fetchNewCard = async () => {
     try {
       return await API.getCard(matchId);
@@ -70,7 +67,6 @@ export default function Match() {
     }
   };
 
-  // Controlla risposta
   const handleGuess = async (min, max) => {
     if (guessMade || successi >= 3 || errori >= 3) return;
 
@@ -82,7 +78,6 @@ export default function Match() {
     setGuessCorrect(isCorrect);
     setNumeroRound(r => r + 1);
 
-    // Aspetta un attimo, poi mostra risultato
     setTimeout(() => handleRoundResult(isCorrect), 1500);
   };
 
@@ -105,7 +100,7 @@ export default function Match() {
   };
 
   const handleTimeOut = () => {
-    if (!demo && !guessMade && successi < 3 && errori < 3) {
+    if (!guessMade && successi < 3 && errori < 3) {
       setGuessMade(true);
       setGuessCorrect(false);
       setNumeroRound(r => r + 1);
@@ -116,13 +111,12 @@ export default function Match() {
   const handleNextRound = async () => {
     const isLastRound = successi === 3 || errori === 3;
 
-    const updatedBase = cards.slice(0, -1); // tutte meno il challenger
+    const updatedBase = cards.slice(0, -1);
     const currentChallenger = cards[cards.length - 1];
 
     let newDeck = updatedBase;
 
     if (guessCorrect && !isLastRound) {
-      // Aggiungi solo se risposta corretta e non siamo all'ultimo round
       newDeck = [...updatedBase, currentChallenger].sort(
         (a, b) => a.indice_sfortuna - b.indice_sfortuna
       );
@@ -152,19 +146,16 @@ export default function Match() {
     }
   };
 
-  // useEffect per inizializzazione
   useEffect(() => {
     initMatch();
     startTimer();
     return () => clearInterval(timerRef.current);
   }, []);
 
-  // Timer timeout
   useEffect(() => {
     if (timeLeft === 0) handleTimeOut();
   }, [timeLeft]);
 
-  // Fine partita
   useEffect(() => {
     if (!demo && (successi === 3 || errori === 3)) {
       handleMatchEnd();
@@ -174,7 +165,6 @@ export default function Match() {
     }
   }, [successi, errori]);
 
-  // Se caricamento
   if (loading || cards.length < 4) {
     return (
       <Container className="text-center text-light mt-5">
@@ -189,13 +179,13 @@ export default function Match() {
       <h2>Tempo rimasto: <span className="text-warning">{timeLeft}s</span></h2>
 
       <Row className="my-4 justify-content-center">
-        <Col md={6}>
+        <Col xs="auto">
           <Card card={challenger} showIndice={guessMade} />
         </Col>
       </Row>
 
       <Row className="mb-4 justify-content-center">
-        {[ [1, 25], [25, 50], [50, 75], [75, 100] ].map(([min, max]) => (
+        {[ [1, 24], [25, 49], [50, 74], [75, 100] ].map(([min, max]) => (
           <Col key={min} xs={6} md={3} className="mb-2">
             <Button
               variant="outline-warning"
@@ -211,13 +201,12 @@ export default function Match() {
 
       <Row className="justify-content-center">
         {baseCards.map(card => (
-          <Col key={card.id} xs={6} md={4} className="mb-3">
+          <Col key={card.id} xs="auto" className="mb-3">
             <Card card={card} showIndice={true} />
           </Col>
         ))}
       </Row>
 
-      {/* Messaggio d'esito round */}
       <Modal show={roundResultVisible} centered backdrop="static">
         <Modal.Body className="text-center bg-dark text-light">
           <h3 className={guessCorrect ? 'text-success' : 'text-danger'}>
@@ -225,7 +214,8 @@ export default function Match() {
           </h3>
           <Button
             variant="warning"
-            className="mt-3"
+            className="fw-bold shadow"
+            style={{ color: '#000' }}
             onClick={() => {
               if (demo) {
                 navigate('/');
@@ -239,8 +229,6 @@ export default function Match() {
         </Modal.Body>
       </Modal>
 
-
-      {/* Messaggio generale */}
       {message && (
         <Alert variant="danger" className="mt-4">
           {message}

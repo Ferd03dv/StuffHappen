@@ -28,7 +28,9 @@ export default function GetStartedPopUp({ onCancel, demo }) {
 
       <div className="d-flex justify-content-center gap-3">
         <Button
-          variant="outline-light"
+          variant="warning"
+          className="fw-bold shadow"
+          style={{ color: '#000' }}
           onClick={onCancel}
         >
           Annulla
@@ -36,7 +38,8 @@ export default function GetStartedPopUp({ onCancel, demo }) {
 
         <Button
           variant="warning"
-          style={{ color: '#000', fontWeight: 'bold' }}
+          className="fw-bold shadow"
+          style={{ color: '#000' }}
           onClick={handleConfirm}
         >
           Iniziamo!
