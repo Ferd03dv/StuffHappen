@@ -231,6 +231,8 @@ app.post('/api/partite/:id/carte-iniziali', isLoggedIn, [
   }
 });
 
+app.use("/images", express.static("images"));
+
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
